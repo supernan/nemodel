@@ -53,7 +53,6 @@ void* name_entity::ExtractEntityThreadFunc(void *arg)
         else
             mTemp[i] = res;
     }
-
     Lock(hNEModel);
     for (int i = nStart; i < nEnd; i++)
     {
@@ -74,6 +73,7 @@ CNEModel::CNEModel(const string &rConfPath)
     //FLAGS_log_dir = "../logs/nemodel/";
     //google::InitGoogleLogging("nemodel");
     int nThreads = GetCoreNum();
+    //nThreads = 1;
     if (nThreads == 0)
     {
         LOG(FATAL) << "thread num is 0 Model Init Failed" << endl;
@@ -92,6 +92,7 @@ CNEModel::CNEModel(const string &rConfPath)
         }
         m_vNEHandlers.push_back(hNEModel);
     }
+    pthread_mutex_init(&m_iModelMutex, NULL);
     LOG(INFO) << "NEModels " << m_vNEHandlers.size() << endl;
 }
 
@@ -100,6 +101,7 @@ CNEModel::~CNEModel()
 {
     for (int i = 0; i < m_vNEHandlers.size(); i++)
         NE::Exit(m_vNEHandlers[i]);
+    pthread_mutex_destroy(&m_iModelMutex);
     LOG(INFO) << "NE Model exit" << endl;
 }
 
@@ -214,7 +216,6 @@ bool CNEModel::BatchEntityExtract(vector<pstWeibo> &rCorpus, vector<neModelRes> 
         nPatchSize = nSize;
         nThreads = 1;
     }
-
     THPOOL::CThreadPool iNEThreadPool(nThreads);
 	iNEThreadPool.fn_iInitThread();
     vector<neModelThreadParam*> vParams;
